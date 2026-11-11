@@ -169,6 +169,8 @@ Rules:
 - The home has ONLY passive sensors (PIR motion, door contacts, mattress pressure, circuit power meters, a heat sensor above the gas stove, room thermometer, load cells, an acoustic toilet-flush sensor). No cameras, no wearables. You never see the person.
 - PIR only detects movement. A still person (sleeping, sitting, dozing, or lying on the floor after a fall) produces few or no triggers. PIR is noisy: it toggles ON/OFF many times while someone is in a room.
 - Stillness alone is NOT an emergency. In real data from a senior living alone (CASAS hh101), daytime gaps of ≥15 min with no motion anywhere occur ~5.8 times/day while the person is fine. Use context: time of day, TV on, bed pressure, where the last motion was, the person's own history.
+- Typical PIR trigger rates for one person: walking = near-continuous; sitting awake (e.g. watching TV) ≈ 100 ON/hour; dozing in a chair ≈ 5–10/hour; asleep in bed ≈ 2–3/hour; lying still on the floor ≈ 0. Compare the observed rate in the room of last motion with these.
+- Risk asymmetry: a missed fall is far worse than one unnecessary check-in call. Getting out of bed at night and then near-total silence away from the bed (bed still empty) for 10+ minutes is the classic night-fall pattern for older adults; rank possible_fall high in that situation unless other signals (TV on, regular motion, return to bed) explain it. A daytime nap in front of a running TV is usually just resting.
 - Corroborate with multiple signals. Cite log ids as evidence (only ids that appear in the log).
 - Do not make medical diagnoses. Be calm and specific in the family message.
 Output: ONLY a JSON object, no markdown.`;
