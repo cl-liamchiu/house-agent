@@ -28,10 +28,13 @@ export const InferenceSchema = z.object({
   reasoning_summary: z.string().catch(""),
 });
 
-const FILLER: Record<string, string> = {
+const FILLER: Partial<Record<Category, string>> = {
   other: "Something not covered by the other hypotheses",
   moving_around: "Grandma is moving around the home",
   resting: "Grandma is resting quietly",
+  sleeping: "Grandma is asleep",
+  watching_tv: "Grandma is watching TV",
+  out_of_home: "Grandma is out of the home",
 };
 
 /** exactly 5, distinct categories where possible, scores sum to 100, evidence restricted to known ids */
@@ -41,11 +44,10 @@ export function normalize(inf: Inference, validIds?: Set<number>): Inference {
     score: Math.max(0, Number.isFinite(h.score) ? h.score : 0),
     evidence: (h.evidence || []).filter((e) => !validIds || validIds.has(e.log_id)).slice(0, 4),
   }));
-  for (const c of ["other", "moving_around", "resting"] as Category[]) {
+  for (const c of Object.keys(FILLER) as Category[]) {
     if (hyps.length >= 5) break;
-    if (!hyps.some((h) => h.category === c)) hyps.push({ label: FILLER[c], category: c, score: 1, evidence: [] });
+    if (!hyps.some((h) => h.category === c)) hyps.push({ label: FILLER[c]!, category: c, score: 1, evidence: [] });
   }
-  while (hyps.length < 5) hyps.push({ label: FILLER.other, category: "other", score: 1, evidence: [] });
   const sum = hyps.reduce((a, h) => a + h.score, 0) || 1;
   hyps = hyps.map((h) => ({ ...h, score: Math.round((h.score / sum) * 100) }));
   hyps.sort((a, b) => b.score - a.score);

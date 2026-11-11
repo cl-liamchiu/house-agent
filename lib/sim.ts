@@ -45,7 +45,7 @@ export class Sim {
     bed: { occ: true },
     fridge: { open: false, closeAt: 0, cyc: 7, w: 110 },
     rice: { mode: "off" as "off" | "cook" | "warm", until: 0 },
-    kettle: { water: 1600, boilUntil: 0, w: 4 },
+    kettle: { water: 1600, boilUntil: 0, w: 4, highSince: 0 },
     stove: { on: false, temp: 27, lastLogged: 27, lastLogT: -9999 },
     ac: { on: false },
     tv: { on: false },
@@ -320,6 +320,7 @@ export class Sim {
       else if (d.rice.mode === "warm" && t >= d.rice.until) d.rice.mode = "off";
       const m = Math.floor(t / 60);
       d.kettle.w = d.kettle.water <= 0 || d.kettle.boilUntil > t ? 700 : m % 20 === 0 ? 600 : 4;
+      if (d.kettle.w >= 500) { if (!d.kettle.highSince) d.kettle.highSince = t; } else d.kettle.highSince = 0;
       d.stove.temp += ((d.stove.on ? 240 : this.room) - d.stove.temp) * (d.stove.on ? 0.35 : 0.18);
       const tgt = d.ac.on ? 26 : this.outdoor() + 1 + (d.stove.on ? 1.5 : 0);
       this.room += (tgt - this.room) * (d.ac.on ? 0.1 : 0.03);
@@ -353,8 +354,9 @@ export class Sim {
     const d = this.dev, e = this.elder, t = this.t;
     if (e.posture === "fallen") return "possible_fall";
     if (d.stove.on && t - this.lastKitchenPresence >= 300) return "safety_hazard";
-    if (d.kettle.water <= 0 && d.kettle.w >= 500) return "safety_hazard";
+    if (d.kettle.water <= 0 && d.kettle.highSince && t - d.kettle.highSince >= 600) return "safety_hazard";
     if (e.posture === "away") return "out_of_home";
+    if (this.room >= 32.5 && !d.ac.on) return "safety_hazard";
     if (this.gtOverride && t < this.gtOverride.until) {
       if (this.gtOverride.cat !== "eating" || e.posture === "sitting") return this.gtOverride.cat;
     }

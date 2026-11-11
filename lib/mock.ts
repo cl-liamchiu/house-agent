@@ -32,8 +32,8 @@ export function mockInfer(f: Features, groups: Record<number, number[]>): Infere
       : `Gas stove has been on with nobody in the kitchen for ${mins(f.sinceKitchenMotion)} min`,
       [...ev(f.stoveLog, `stove heat ${f.stoveTemp.toFixed(0)}°C`), ...ev(groupOf(f.lastPir.kitchen), "last kitchen motion"), ...ev(groupOf(f.lastPir.living), "motion is in the living room")]);
   }
-  if (f.kettleHighSec >= 15 * 60) {
-    add("safety_hazard", 55 + Math.min(30, mins(f.kettleHighSec) - 15), `Hot-water pot drawing 700 W non-stop for ${mins(f.kettleHighSec)} min — likely boiling dry`,
+  if (f.kettleHighSec >= 10 * 60) {
+    add("safety_hazard", 60 + Math.min(30, mins(f.kettleHighSec) - 10), `Hot-water pot drawing 700 W non-stop for ${mins(f.kettleHighSec)} min — likely boiling dry`,
       [...ev(f.kettleLog, "pot stuck at high power"), ...ev(f.kettleWeightLog, "pot weight near empty")]);
   }
   // out of home
@@ -77,7 +77,7 @@ export function mockInfer(f: Features, groups: Record<number, number[]>): Infere
   const activeAreas = Object.values(f.motion5).filter((n) => n > 0).length;
   if (!away && still < 120) add("moving_around", activeAreas >= 2 ? 40 : 18, "Grandma is moving between rooms", lastPirEv);
   // heat
-  if (f.roomTemp >= 31 && !f.acOn && !away) add("safety_hazard", 30 + Math.min(30, (f.roomTemp - 31) * 15), `Room is ${f.roomTemp.toFixed(1)}°C and the A/C is off — heat risk`, ev(f.roomLog, "room thermometer"));
+  if (f.roomTemp >= 32.5 && !f.acOn && !away) add("safety_hazard", 45 + Math.min(30, (f.roomTemp - 32.5) * 15), `Room is ${f.roomTemp.toFixed(1)}°C and the A/C is off — heat risk`, ev(f.roomLog, "room thermometer"));
   add("other", 3, "Something not covered by the other hypotheses", []);
 
   // keep the best hypothesis per category

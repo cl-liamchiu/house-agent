@@ -113,9 +113,19 @@ export function features(sim: Sim): Features {
   const lb = sim.lastBy;
   const d = sim.dev;
   // how long the kettle has been drawing high power
+  // how long the kettle circuit has stayed above 500 W (from the power log)
   let kettleHighSec = 0;
   const kl = lb["kitchen.kettle.power"];
-  if (kl && /→ (600|700) W/.test(kl.value) && d.kettle.w >= 500) kettleHighSec = t - kl.t;
+  if (kl && d.kettle.w >= 500) {
+    let start = kl.t;
+    for (let i = logs.length - 1; i >= 0; i--) {
+      const l = logs[i];
+      if (l.sensor !== "kitchen.kettle.power") continue;
+      const [a, b] = l.value.split("→").map((x) => parseFloat(x));
+      if (b >= 500 && a < 500) { start = l.t; break; }
+    }
+    kettleHighSec = t - start;
+  }
   const door = lb["entry.front_door"];
   const lastDoorOpen = [...logs].reverse().find((l) => l.sensor === "entry.front_door" && l.value === "OPEN");
   const outNoMotion = !!lastDoorOpen && (!lastPirAny || lastPirAny.t <= lastDoorOpen.t + 6) && !d.bed.occ;
@@ -202,7 +212,7 @@ export function buildContext(sim: Sim, earlier: InferenceRecord[]): BuiltContext
   if (f.night) tags.add("night");
   if (f.stoveTemp > 60) tags.add("stove");
   if (f.kettleHighSec > 600) tags.add("kettle");
-  if (f.roomTemp >= 31) tags.add("heat");
+  if (f.roomTemp >= 32) tags.add("heat");
   if (f.sinceMotion > 600) { tags.add("stillness"); tags.add("fall"); }
   if (f.tvOn) tags.add("tv");
   if (s.nightToilet >= 3) tags.add("night_toilet");
