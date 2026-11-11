@@ -7,6 +7,10 @@
 
 [![House Agent demo — click to play](docs/demo-poster.png)](docs/demo.mp4)
 
+
+https://github.com/user-attachments/assets/046969ad-fc53-4adb-a8e4-fcfe3ad7b24f
+
+
 ▶ **[Watch the demo (docs/demo.mp4)](docs/demo.mp4)** — recorded from the running app; every inference on screen is a live GMI Cloud response.
 It shows: the stove left on → `safety_hazard` ranked #1 with its evidence rows highlighted; a sofa nap → `resting` (not a fall); a 2 am fall → `possible_fall` ranked #1; and switching models live.
 The voiceover is synthetic (Piper TTS).
