@@ -45,6 +45,7 @@ export default function Page() {
   const setSpeed = useStore((s) => s.setSpeed);
   const note = useStore((s) => s.note);
   const llm = useStore((s) => s.llmConfigured);
+  const intervalSec = useStore((s) => s.intervalSec);
   const sc = SCENARIOS.find((s) => s.id === scenarioId)!;
 
   return (
@@ -92,7 +93,7 @@ export default function Page() {
           <LogPanel />
         </section>
         <section className="panel lg:overflow-y-auto">
-          <h2 className="panel-title">③ LLM inference <span>every 30 s · top 5</span></h2>
+          <h2 className="panel-title">③ LLM inference <span>every {intervalSec} s · top 5</span></h2>
           <InferencePanel />
         </section>
       </div>

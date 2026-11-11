@@ -2,7 +2,7 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { MODELS, findModel } from "@/lib/models";
-import { useStore } from "@/lib/store";
+import { INTERVALS, useStore } from "@/lib/store";
 import { CAT_COLOR, type AlertLevel, hm } from "@/lib/types";
 
 const ALERT_STYLE: Record<AlertLevel, string> = {
@@ -25,6 +25,8 @@ export default function InferencePanel() {
   const setModel = useStore((s) => s.setModel);
   const setEffort = useStore((s) => s.setEffort);
   const llm = useStore((s) => s.llmConfigured);
+  const intervalSec = useStore((s) => s.intervalSec);
+  const setIntervalSec = useStore((s) => s.setIntervalSec);
   const [now, setNow] = useState(() => Date.now());
   const [showPrompt, setShowPrompt] = useState(false);
   useEffect(() => { const i = setInterval(() => setNow(Date.now()), 250); return () => clearInterval(i); }, []);
@@ -49,6 +51,10 @@ export default function InferencePanel() {
           {inflight ? "Inferring…" : "Infer now"}
         </button>
         <span className="text-zinc-400">{inflight ? "waiting for model" : `next in ${secs}s`}</span>
+        <select value={intervalSec} onChange={(e) => setIntervalSec(Number(e.target.value))} title="how often to run inference"
+          className="rounded border border-zinc-700 bg-zinc-900 px-1 py-0.5 text-[11px] text-zinc-100">
+          {INTERVALS.map((n) => <option key={n} value={n}>every {n}s</option>)}
+        </select>
         {cur && (
           <span className={`rounded px-1.5 py-0.5 font-mono text-[10px] ${cur.source === "llm" ? "bg-sky-600 text-white" : "bg-zinc-700 text-zinc-200"}`}>
             {cur.source === "llm" ? `LLM · ${cur.model} · ${(cur.latencyMs / 1000).toFixed(1)}s` : "Fallback (rules)"}
@@ -136,7 +142,7 @@ export default function InferencePanel() {
       )}
 
       <div className="mt-auto">
-        <div className="mb-1 text-[10px] text-zinc-500">Inference history (#1 every 30 s · ✓ = matched ground truth)</div>
+        <div className="mb-1 text-[10px] text-zinc-500">Inference history (#1 every {intervalSec} s · ✓ = matched ground truth)</div>
         <div className="flex flex-wrap gap-0.5">
           {records.map((r) => (
             <div key={r.n} title={`${hm(r.t)} [${r.source === "llm" ? r.model : "fallback"}] ${r.hypotheses[0].category}: ${r.hypotheses[0].label} (truth: ${r.gt})`}

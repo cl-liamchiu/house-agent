@@ -61,6 +61,8 @@ Measured on GMI Cloud with a real ~3.5k-token prompt (stove scenario):
 | `zai-org/GLM-5.3-Flash` | low | ~13 s | safety_hazard ✓ |
 | `deepseek-ai/DeepSeek-V4.1-Flash` | low | ~17 s | safety_hazard ✓ |
 
+Inference runs every **10 / 15 / 30 / 60 s** (selectable in the panel, default 30 s), measured from the start of each request; requests never overlap, so a slow model simply runs back-to-back.
+
 With full ("default") thinking, every model we tried took 12–18 s or more, so `low` is the default. The panel shows top-1 accuracy and mean latency per model once you have tried more than one.
 
 ## Sensor assumptions (and the hardware each needs)

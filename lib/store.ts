@@ -10,10 +10,12 @@ const saved = (k: string, d: string) => {
   try { return (typeof window !== "undefined" && window.localStorage.getItem(k)) || d; } catch { return d; }
 };
 
-export const INFER_EVERY_MS = 30000;
+export const INTERVALS = [10, 15, 30, 60]; // seconds between inference rounds (real time)
 export const restoreModel = () => {
   const m = saved("ha.model", DEFAULT_MODEL);
   if (findModel(m)) useStore.getState().setModel(m);
+  const iv = Number(saved("ha.interval", "30"));
+  if (INTERVALS.includes(iv)) useStore.setState({ intervalSec: iv });
 };
 
 interface State {
@@ -30,6 +32,8 @@ interface State {
   note: string;
   model: string;
   effort: string;
+  intervalSec: number;
+  setIntervalSec: (n: number) => void;
   setModel: (m: string) => void;
   setEffort: (e: string) => void;
   setScenario: (sc: Scenario) => void;
@@ -60,6 +64,11 @@ export const useStore = create<State>((set, get) => ({
     set({ model: m, effort: opt.efforts[0] });
   },
   setEffort: (e) => set({ effort: e }),
+  intervalSec: 30,
+  setIntervalSec: (n) => {
+    try { localStorage.setItem("ha.interval", String(n)); } catch {}
+    set((st) => ({ intervalSec: n, nextAt: Math.min(st.nextAt, Date.now() + n * 1000) }));
+  },
   setScenario: (sc) =>
     set({ sim: loadScenario(sc), scenarioId: sc.id, records: [], highlight: new Set(), groups: {}, nextAt: Date.now() + 3000, note: "", inflight: false }),
   setSpeed: (v) => {
@@ -84,6 +93,7 @@ export const useStore = create<State>((set, get) => ({
     const t = sim.t;
     set({ inflight: true, lastPrompt: ctx.user, groups: { ...st.groups, ...ctx.groups } });
     const t0 = performance.now();
+    const startedAt = Date.now();
     let rec: Omit<InferenceRecord, "n" | "hit1" | "hit3"> | null = null;
     let note = "";
     if (st.llmConfigured !== false) {
@@ -115,6 +125,6 @@ export const useStore = create<State>((set, get) => ({
     if (get().sim !== sim) { set({ inflight: false }); return; } // scenario changed meanwhile
     const cats = rec.hypotheses.map((h) => h.category);
     const full: InferenceRecord = { ...rec, n: get().records.length + 1, hit1: cats[0] === gt, hit3: cats.slice(0, 3).includes(gt), note };
-    set((s) => ({ records: [...s.records, full], inflight: false, note, nextAt: Date.now() + INFER_EVERY_MS }));
+    set((s) => ({ records: [...s.records, full], inflight: false, note, nextAt: Math.max(Date.now() + 500, startedAt + get().intervalSec * 1000) }));
   },
 }));
