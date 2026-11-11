@@ -1,0 +1,10 @@
+@import "tailwindcss";
+
+:root { color-scheme: dark; }
+html, body { background: #09090b; color: #f4f4f5; overflow-x: hidden; }
+body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+.panel { @apply flex min-h-0 min-w-0 flex-col rounded-xl border border-zinc-800 bg-zinc-900/50 p-2.5; }
+.panel-title { @apply mb-2 flex items-baseline justify-between gap-2 text-sm font-semibold text-zinc-200; }
+.panel-title span { @apply text-[10px] font-normal text-zinc-500; }
+@keyframes logIn { from { background: rgba(251, 191, 36, 0.18); } to { background: transparent; } }
+.log-row { animation: logIn 1.2s ease-out; }
