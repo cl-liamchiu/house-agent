@@ -288,7 +288,6 @@ export class Sim {
   tick() {
     this.t++;
     const t = this.t, d = this.dev, e = this.elder;
-    const before = this.watts();
 
     // walking happens in sim time too (≈1 m/s)
     if (this.walk) this.stepWalk();
@@ -337,16 +336,23 @@ export class Sim {
       }
     }
 
-    const after = this.watts();
-    this.powerChange("kitchen.fridge.power", "kitchen", before.fridge, after.fridge);
-    this.powerChange("kitchen.kettle.power", "kitchen", before.kettle, after.kettle);
-    this.powerChange("kitchen.rice_cooker.power", "kitchen", before.rice, after.rice);
-    this.powerChange("living.tv.power", "living", before.tv, after.tv);
-    this.powerChange("living.ac.power", "living", before.ac, after.ac);
-
     if (t % 60 === 0) this.gtSeries.push({ t, cat: this.groundTruth() });
     if (this.gtSeries.length > 3000) this.gtSeries.shift();
     this.runScript();
+    // compare every circuit with what the meters last reported — catches scripted actions
+    // and UI clicks made between ticks (both happen outside the physics step)
+    this.logPower();
+  }
+
+  lastW = { fridge: 110, kettle: 4, rice: 0, tv: 0, ac: 0 };
+  logPower() {
+    const w = this.watts(), L = this.lastW;
+    this.powerChange("kitchen.fridge.power", "kitchen", L.fridge, w.fridge);
+    this.powerChange("kitchen.kettle.power", "kitchen", L.kettle, w.kettle);
+    this.powerChange("kitchen.rice_cooker.power", "kitchen", L.rice, w.rice);
+    this.powerChange("living.tv.power", "living", L.tv, w.tv);
+    this.powerChange("living.ac.power", "living", L.ac, w.ac);
+    this.lastW = w;
   }
 
   /** what is actually happening (the simulator knows; the model does not) */
@@ -448,6 +454,7 @@ export function loadScenario(sc: Scenario): Sim {
   s.scenario = sc;
   s.heat = sc.heat ?? 0;
   sc.init?.(s);
+  s.lastW = s.watts();
   const steps = sc.steps.slice().sort((a, b) => a[0] - b[0]);
   s.instant = true;
   s.script = { steps, i: 0 };
