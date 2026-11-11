@@ -3,6 +3,14 @@
 > **Existing products detect. We explain.**
 > Built at cOmpiled-18 (YC Startup School Hackathon, Taipei) for YC RFS *AI for the Aging Population*. LLM inference on **GMI Cloud**.
 
+## Demo video (80 s, with voiceover)
+
+[![House Agent demo — click to play](docs/demo-poster.png)](docs/demo.mp4)
+
+▶ **[Watch the demo (docs/demo.mp4)](docs/demo.mp4)** — recorded from the running app; every inference on screen is a live GMI Cloud response.
+It shows: the stove left on → `safety_hazard` ranked #1 with its evidence rows highlighted; a sofa nap → `resting` (not a fall); a 2 am fall → `possible_fall` ranked #1; and switching models live.
+The voiceover is synthetic (Piper TTS).
+
 ## Problem
 
 Taiwan is a super-aged society and more elders live alone. Cameras feel like surveillance; wearables get left on the nightstand.
