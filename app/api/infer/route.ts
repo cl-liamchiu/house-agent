@@ -4,6 +4,7 @@ import { InferenceSchema, extractJson, normalize } from "@/lib/schema";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 30; // LLM call + one retry can exceed short serverless defaults
 
 const BASE_URL = process.env.LLM_BASE_URL || "https://api.gmi-serving.com/v1";
 const API_KEY = process.env.LLM_API_KEY || "";
