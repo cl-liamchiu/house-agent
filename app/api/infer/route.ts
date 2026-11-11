@@ -8,6 +8,8 @@ export const dynamic = "force-dynamic";
 const BASE_URL = process.env.LLM_BASE_URL || "https://api.gmi-serving.com/v1";
 const API_KEY = process.env.LLM_API_KEY || "";
 const MODEL = process.env.LLM_MODEL || "";
+// reasoning models on GMI Cloud are too slow for a 30 s loop with full thinking; "low" keeps it ~6 s
+const EFFORT = process.env.LLM_REASONING_EFFORT || "low";
 
 export async function GET() {
   return Response.json({ configured: !!(API_KEY && MODEL), model: MODEL || null });
@@ -26,7 +28,8 @@ export async function POST(req: Request) {
       const res = await client.chat.completions.create({
         model: MODEL,
         temperature: 0.2,
-        max_tokens: 1400,
+        max_tokens: 2500,
+        ...(EFFORT && EFFORT !== "off" ? { reasoning_effort: EFFORT as "low" } : {}),
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: body.user + (attempt ? "\n\nYour previous answer was not valid JSON. Reply with ONLY the JSON object." : "") },

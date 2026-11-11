@@ -53,7 +53,8 @@ npm run dev                  # http://localhost:3000
 |---|---|
 | `LLM_BASE_URL` | GMI Cloud OpenAI-compatible endpoint (default `https://api.gmi-serving.com/v1`) |
 | `LLM_API_KEY` | GMI Cloud API key (server-side only) |
-| `LLM_MODEL` | model id on GMI Cloud — pick a fast one (≤10 s per round) |
+| `LLM_MODEL` | model id on GMI Cloud — we use `google/gemini-3.8-flash` (~6–8 s per round) |
+| `LLM_REASONING_EFFORT` | `low` (default). Full thinking takes 12–18 s on every model we tried; `off` for models that reject the parameter |
 
 ## Sensor assumptions (and the hardware each needs)
 
