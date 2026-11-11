@@ -49,12 +49,21 @@ cp .env.example .env.local   # fill LLM_API_KEY and LLM_MODEL (GMI Cloud); leave
 npm run dev                  # http://localhost:3000
 ```
 
-| Env | Meaning |
-|---|---|
-| `LLM_BASE_URL` | GMI Cloud OpenAI-compatible endpoint (default `https://api.gmi-serving.com/v1`) |
-| `LLM_API_KEY` | GMI Cloud API key (server-side only) |
-| `LLM_MODEL` | model id on GMI Cloud — we use `google/gemini-3.8-flash` (~6–8 s per round) |
-| `LLM_REASONING_EFFORT` | `low` (default). Full thinking takes 12–18 s on every model we tried; `off` for models that reject the parameter |
+Only **`LLM_API_KEY`** (your GMI Cloud key, server-side only) is required. Leave it empty for fallback mode.
+
+The **model and reasoning effort are chosen in the UI** (③ panel), from an allow-list in `lib/models.ts`.
+Measured on GMI Cloud with a real ~3.5k-token prompt (stove scenario):
+
+| Model | Reasoning | Latency | Top-1 on the stove prompt |
+|---|---|---|---|
+| `google/gemini-3.8-flash` (default) | low | ~6 s | safety_hazard ✓ |
+| `google/gemini-3.5-flash-lite` | — | ~6 s | safety_hazard ✓ |
+| `zai-org/GLM-5.3-Flash` | low | ~13 s | safety_hazard ✓ |
+| `deepseek-ai/DeepSeek-V4.1-Flash` | low | ~17 s | safety_hazard ✓ |
+
+Inference runs every **10 / 15 / 30 / 60 s** (selectable in the panel, default 30 s), measured from the start of each request; requests never overlap, so a slow model simply runs back-to-back.
+
+With full ("default") thinking, every model we tried took 12–18 s or more, so `low` is the default. The panel shows top-1 accuracy and mean latency per model once you have tried more than one.
 
 ## Sensor assumptions (and the hardware each needs)
 

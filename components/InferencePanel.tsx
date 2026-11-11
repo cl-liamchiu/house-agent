@@ -1,7 +1,8 @@
 "use client";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
-import { useStore } from "@/lib/store";
+import { MODELS, findModel } from "@/lib/models";
+import { INTERVALS, useStore } from "@/lib/store";
 import { CAT_COLOR, type AlertLevel, hm } from "@/lib/types";
 
 const ALERT_STYLE: Record<AlertLevel, string> = {
@@ -19,6 +20,13 @@ export default function InferencePanel() {
   const infer = useStore((s) => s.infer);
   const setHighlight = useStore((s) => s.setHighlight);
   const lastPrompt = useStore((s) => s.lastPrompt);
+  const model = useStore((s) => s.model);
+  const effort = useStore((s) => s.effort);
+  const setModel = useStore((s) => s.setModel);
+  const setEffort = useStore((s) => s.setEffort);
+  const llm = useStore((s) => s.llmConfigured);
+  const intervalSec = useStore((s) => s.intervalSec);
+  const setIntervalSec = useStore((s) => s.setIntervalSec);
   const [now, setNow] = useState(() => Date.now());
   const [showPrompt, setShowPrompt] = useState(false);
   useEffect(() => { const i = setInterval(() => setNow(Date.now()), 250); return () => clearInterval(i); }, []);
@@ -26,6 +34,13 @@ export default function InferencePanel() {
   const cur = records[records.length - 1];
   const n = records.length;
   const top1 = records.filter((r) => r.hit1).length, top3 = records.filter((r) => r.hit3).length;
+  const byModel = new Map<string, { n: number; h1: number; ms: number }>();
+  for (const r of records) {
+    const k = r.source === "llm" ? r.model ?? "llm" : "fallback (rules)";
+    const v = byModel.get(k) ?? { n: 0, h1: 0, ms: 0 };
+    v.n++; v.h1 += r.hit1 ? 1 : 0; v.ms += r.latencyMs;
+    byModel.set(k, v);
+  }
   const secs = Math.max(0, Math.ceil((nextAt - now) / 1000));
 
   return (
@@ -36,6 +51,10 @@ export default function InferencePanel() {
           {inflight ? "Inferring…" : "Infer now"}
         </button>
         <span className="text-zinc-400">{inflight ? "waiting for model" : `next in ${secs}s`}</span>
+        <select value={intervalSec} onChange={(e) => setIntervalSec(Number(e.target.value))} title="how often to run inference"
+          className="rounded border border-zinc-700 bg-zinc-900 px-1 py-0.5 text-[11px] text-zinc-100">
+          {INTERVALS.map((n) => <option key={n} value={n}>every {n}s</option>)}
+        </select>
         {cur && (
           <span className={`rounded px-1.5 py-0.5 font-mono text-[10px] ${cur.source === "llm" ? "bg-sky-600 text-white" : "bg-zinc-700 text-zinc-200"}`}>
             {cur.source === "llm" ? `LLM · ${cur.model} · ${(cur.latencyMs / 1000).toFixed(1)}s` : "Fallback (rules)"}
@@ -46,6 +65,18 @@ export default function InferencePanel() {
             top-1 {Math.round((top1 / n) * 100)}% · top-3 {Math.round((top3 / n) * 100)}% <span className="text-zinc-500">(n={n})</span>
           </span>
         )}
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+        <span className="text-zinc-500">Model on GMI Cloud</span>
+        <select value={model} onChange={(e) => setModel(e.target.value)} disabled={llm === false}
+          className="rounded border border-zinc-700 bg-zinc-900 px-1.5 py-0.5 text-zinc-100 disabled:opacity-50">
+          {MODELS.map((m) => <option key={m.id} value={m.id}>{m.label} · {m.note}</option>)}
+        </select>
+        <span className="text-zinc-500">reasoning</span>
+        <select value={effort} onChange={(e) => setEffort(e.target.value)} disabled={llm === false}
+          className="rounded border border-zinc-700 bg-zinc-900 px-1.5 py-0.5 text-zinc-100 disabled:opacity-50">
+          {(findModel(model)?.efforts ?? []).map((x) => <option key={x} value={x}>{x === "default" ? "model default" : x}</option>)}
+        </select>
       </div>
       {note && <div className="text-[10px] text-zinc-500">{note}</div>}
 
@@ -111,16 +142,25 @@ export default function InferencePanel() {
       )}
 
       <div className="mt-auto">
-        <div className="mb-1 text-[10px] text-zinc-500">Inference history (#1 every 30 s · ✓ = matched ground truth)</div>
+        <div className="mb-1 text-[10px] text-zinc-500">Inference history (#1 every {intervalSec} s · ✓ = matched ground truth)</div>
         <div className="flex flex-wrap gap-0.5">
           {records.map((r) => (
-            <div key={r.n} title={`${hm(r.t)} ${r.hypotheses[0].category}: ${r.hypotheses[0].label} (truth: ${r.gt})`}
+            <div key={r.n} title={`${hm(r.t)} [${r.source === "llm" ? r.model : "fallback"}] ${r.hypotheses[0].category}: ${r.hypotheses[0].label} (truth: ${r.gt})`}
               className="flex h-5 w-5 items-center justify-center rounded-sm text-[9px] font-bold text-black"
               style={{ background: CAT_COLOR[r.hypotheses[0].category], outline: r.alert_level === "urgent" ? "2px solid #ef4444" : undefined }}>
               {r.hit1 ? "✓" : r.hit3 ? "·" : ""}
             </div>
           ))}
         </div>
+        {byModel.size > 1 && (
+          <table className="mt-1.5 w-full font-mono text-[10px] text-zinc-400">
+            <tbody>
+              {[...byModel].map(([k, v]) => (
+                <tr key={k}><td className="truncate pr-2">{k.replace(/^.*\//, "")}</td><td>n={v.n}</td><td>top-1 {Math.round((v.h1 / v.n) * 100)}%</td><td>{(v.ms / v.n / 1000).toFixed(1)}s</td></tr>
+              ))}
+            </tbody>
+          </table>
+        )}
         {lastPrompt && (
           <button className="mt-1 text-[10px] text-zinc-500 underline hover:text-zinc-300" onClick={() => setShowPrompt((v) => !v)}>
             {showPrompt ? "hide" : "show"} the exact prompt sent to the model
