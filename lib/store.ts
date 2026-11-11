@@ -3,9 +3,18 @@ import { create } from "zustand";
 import { buildContext } from "./context";
 import { mockInfer } from "./mock";
 import { SCENARIOS, type Scenario, Sim, loadScenario } from "./sim";
+import { DEFAULT_MODEL, findModel } from "./models";
 import type { InferenceRecord } from "./types";
 
+const saved = (k: string, d: string) => {
+  try { return (typeof window !== "undefined" && window.localStorage.getItem(k)) || d; } catch { return d; }
+};
+
 export const INFER_EVERY_MS = 30000;
+export const restoreModel = () => {
+  const m = saved("ha.model", DEFAULT_MODEL);
+  if (findModel(m)) useStore.getState().setModel(m);
+};
 
 interface State {
   sim: Sim;
@@ -19,6 +28,10 @@ interface State {
   lastPrompt: string;
   llmConfigured: boolean | null;
   note: string;
+  model: string;
+  effort: string;
+  setModel: (m: string) => void;
+  setEffort: (e: string) => void;
   setScenario: (sc: Scenario) => void;
   setSpeed: (v: number) => void;
   bump: () => void;
@@ -38,6 +51,15 @@ export const useStore = create<State>((set, get) => ({
   lastPrompt: "",
   llmConfigured: null,
   note: "",
+  model: DEFAULT_MODEL,
+  effort: findModel(DEFAULT_MODEL)!.efforts[0],
+  setModel: (m) => {
+    const opt = findModel(m);
+    if (!opt) return;
+    try { localStorage.setItem("ha.model", m); } catch {}
+    set({ model: m, effort: opt.efforts[0] });
+  },
+  setEffort: (e) => set({ effort: e }),
   setScenario: (sc) =>
     set({ sim: loadScenario(sc), scenarioId: sc.id, records: [], highlight: new Set(), groups: {}, nextAt: Date.now() + 3000, note: "", inflight: false }),
   setSpeed: (v) => {
@@ -67,17 +89,17 @@ export const useStore = create<State>((set, get) => ({
     if (st.llmConfigured !== false) {
       try {
         const ctl = new AbortController();
-        const timer = setTimeout(() => ctl.abort(), 22000);
+        const timer = setTimeout(() => ctl.abort(), 29000);
         const r = await fetch("/api/infer", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ user: ctx.user, validIds: ctx.validIds }),
+          body: JSON.stringify({ user: ctx.user, validIds: ctx.validIds, model: st.model, effort: st.effort }),
           signal: ctl.signal,
         });
         clearTimeout(timer);
         const j = await r.json();
         if (r.ok && j.inference) {
-          rec = { ...j.inference, t, gt, source: "llm", model: j.model, latencyMs: j.latencyMs ?? Math.round(performance.now() - t0) };
+          rec = { ...j.inference, t, gt, source: "llm", model: j.model + (j.effort && j.effort !== "default" ? ` (${j.effort})` : ""), latencyMs: j.latencyMs ?? Math.round(performance.now() - t0) };
         } else {
           note = r.status === 503 ? "No API key — using rule-based fallback" : `LLM error: ${j.error ?? r.status} — fallback used`;
           if (r.status === 503) set({ llmConfigured: false });

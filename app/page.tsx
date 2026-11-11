@@ -4,7 +4,7 @@ import House from "@/components/House";
 import InferencePanel from "@/components/InferencePanel";
 import LogPanel from "@/components/LogPanel";
 import { SCENARIOS } from "@/lib/sim";
-import { useStore } from "@/lib/store";
+import { restoreModel, useStore } from "@/lib/store";
 import { hms } from "@/lib/types";
 
 const WALK_MS = 140;
@@ -12,6 +12,7 @@ const WALK_MS = 140;
 function useLoop() {
   useEffect(() => {
     let raf = 0, last = performance.now(), acc = 0, walkAcc = 0, lastPaint = 0;
+    restoreModel();
     fetch("/api/infer").then((r) => r.json()).then((j) => useStore.setState({ llmConfigured: !!j.configured })).catch(() => useStore.setState({ llmConfigured: false }));
     const frame = (now: number) => {
       const st = useStore.getState();
@@ -67,7 +68,7 @@ export default function Page() {
           </div>
         </div>
         <span className={`rounded px-2 py-0.5 text-[11px] ${llm ? "bg-sky-700" : "bg-zinc-700"}`}>
-          {llm == null ? "…" : llm ? "LLM: GMI Cloud" : "LLM: not configured → Fallback"}
+          {llm == null ? "…" : llm ? "LLM: GMI Cloud" : "No API key → rule-based fallback"}
         </span>
       </header>
 
